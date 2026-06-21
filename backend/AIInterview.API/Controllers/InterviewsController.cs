@@ -11,7 +11,7 @@ namespace AIInterview.API.Controllers;
 [ApiController]
 [Route("api/interviews")]
 [Authorize]
-public class InterviewsController(IInterviewService interviewService, AppDbContext db, IPdfReportService pdfReportService) : ControllerBase
+public class InterviewsController(IInterviewService interviewService, AppDbContext db, IPdfReportService pdfReportService, ILogger<InterviewsController> logger) : ControllerBase
 {
     [HttpPost("start")]
     public async Task<ActionResult<StartInterviewResponse>> Start(StartInterviewRequest request)
@@ -44,8 +44,17 @@ public class InterviewsController(IInterviewService interviewService, AppDbConte
         if (!session.IsCompleted) return BadRequest(new { message = "PDF raporu için mülakat tamamlanmalıdır." });
         var report = await interviewService.GetReportAsync(userId, sessionId);
         if (report is null) return NotFound();
-        try { return File(pdfReportService.Generate(report, session.User?.FullName ?? "Kullanıcı"), "application/pdf", $"interview-report-{sessionId}.pdf"); }
-        catch { return StatusCode(500, new { message = "PDF raporu oluşturulamadı." }); }
+        try
+        {
+            var pdf = pdfReportService.Generate(report, session.User?.FullName ?? "Kullanıcı");
+            logger.LogInformation("PDF report generated for session {SessionId}, user {UserId}, size {Size} bytes.", sessionId, userId, pdf.Length);
+            return File(pdf, "application/pdf", $"interview-report-{sessionId}.pdf");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "PDF report generation failed for session {SessionId}, user {UserId}.", sessionId, userId);
+            return StatusCode(500, new { message = "PDF raporu oluşturulamadı. Lütfen raporun tamamlandığından emin olun." });
+        }
     }
 
     [HttpGet("history")]

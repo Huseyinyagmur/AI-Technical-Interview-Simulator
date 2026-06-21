@@ -86,6 +86,12 @@ JWT_EXPIRES_MINUTES=120
 
 Completed interview reports can be downloaded from the report screen. The protected endpoint is `GET /api/interviews/{sessionId}/report/pdf`; it generates an A4 PDF containing summary scores, study recommendations and per-question feedback. The endpoint requires a valid JWT and verifies that the requested interview belongs to the current user.
 
+If PDF download fails, verify that the interview is completed and that the browser session is still valid. The UI explains expired-session, missing-report, ownership and incomplete-interview errors separately; backend logs include the underlying PDF generation exception.
+
+## Modern UI
+
+The frontend uses a consistent SaaS-style design system across authentication, track selection, interview reports, dashboard and history. It includes responsive layouts, visible loading/error states, accessible focus styles, modern cards and protected user-specific flows.
+
 ## Common local errors
 
 - **Invalid column name `CompletedAtUtc`, `Concept`, or `Difficulty`:** run `dotnet ef database update` from `backend/AIInterview.API`. See [database reset notes](docs/database-reset.md) if the local schema is damaged.

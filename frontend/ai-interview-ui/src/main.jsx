@@ -7,4 +7,5 @@ import './dashboard.css';
 import './track-selection.css';
 import './auth.css';
 import './pdf.css';
+import './app-modern.css';
 createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);
