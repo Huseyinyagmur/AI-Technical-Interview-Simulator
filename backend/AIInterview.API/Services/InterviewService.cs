@@ -22,14 +22,14 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
         ["Computer Vision"] = ["Image Processing", "Object Detection", "YOLO", "OCR", "CNN", "Data Annotation", "Dataset Preparation", "Precision / Recall", "mAP", "Model Deployment"]
     };
 
-    public async Task<StartInterviewResponse> StartAsync(StartInterviewRequest request)
+    public async Task<StartInterviewResponse> StartAsync(Guid userId, StartInterviewRequest request)
     {
         InterviewTrackCatalog.TrackDefinition? track = null;
         if (!string.IsNullOrWhiteSpace(request.Track) && !InterviewTrackCatalog.Tracks.TryGetValue(request.Track, out track)) throw new ArgumentException("Geçersiz interview track seçildi.");
         if (track is null && !AllowedTopics.Contains(request.Topic, StringComparer.OrdinalIgnoreCase)) throw new ArgumentException("Geçerli bir konu veya interview track seçin.");
         if (!DifficultyLevels.Contains(request.Difficulty, StringComparer.OrdinalIgnoreCase) && !request.Difficulty.Equals("Mid-level", StringComparison.OrdinalIgnoreCase)) throw new ArgumentException("Choose Junior, Mid, or Senior difficulty.");
         var firstDomain = track?.Domains[0] ?? AllowedTopics.First(x => x.Equals(request.Topic, StringComparison.OrdinalIgnoreCase));
-        var session = new InterviewSession { Topic = firstDomain, Track = track?.Title ?? firstDomain, Difficulty = NormalizeDifficulty(request.Difficulty) };
+        var session = new InterviewSession { UserId = userId, Topic = firstDomain, Track = track?.Title ?? firstDomain, Difficulty = NormalizeDifficulty(request.Difficulty) };
         var concept = SelectConcept(firstDomain, []);
         var question = new InterviewQuestion { QuestionNumber = 1, Domain = firstDomain, Concept = concept, Difficulty = session.Difficulty, Text = await gemini.GenerateQuestionAsync(firstDomain, session.Difficulty, 1, concept, [], []) };
         session.Questions.Add(question);
@@ -38,9 +38,9 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
         return new StartInterviewResponse(session.Id, ToQuestionDto(question));
     }
 
-    public async Task<SubmitAnswerResponse?> SubmitAnswerAsync(Guid sessionId, SubmitAnswerRequest request)
+    public async Task<SubmitAnswerResponse?> SubmitAnswerAsync(Guid userId, Guid sessionId, SubmitAnswerRequest request)
     {
-        var session = await db.InterviewSessions.Include(x => x.Questions).ThenInclude(x => x.Answer).FirstOrDefaultAsync(x => x.Id == sessionId);
+        var session = await db.InterviewSessions.Include(x => x.Questions).ThenInclude(x => x.Answer).FirstOrDefaultAsync(x => x.Id == sessionId && x.UserId == userId);
         var question = session?.Questions.SingleOrDefault(x => x.Id == request.QuestionId);
         if (session is null || question is null || question.Answer is not null || session.IsCompleted) return null;
         Console.WriteLine("[EVALUATION START]");
@@ -71,9 +71,9 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
         return new SubmitAnswerResponse(evaluation, nextQuestion, session.IsCompleted);
     }
 
-    public async Task<InterviewReportDto?> GetReportAsync(Guid sessionId)
+    public async Task<InterviewReportDto?> GetReportAsync(Guid userId, Guid sessionId)
     {
-        var session = await db.InterviewSessions.Include(x => x.Questions).ThenInclude(x => x.Answer).ThenInclude(x => x!.Evaluation).FirstOrDefaultAsync(x => x.Id == sessionId);
+        var session = await db.InterviewSessions.Include(x => x.Questions).ThenInclude(x => x.Answer).ThenInclude(x => x!.Evaluation).FirstOrDefaultAsync(x => x.Id == sessionId && x.UserId == userId);
         if (session is null || !session.IsCompleted) return null;
         var answers = session.Questions.OrderBy(x => x.QuestionNumber).Where(x => x.Answer?.Evaluation is not null).Select(x => new ReportAnswerDto(x.QuestionNumber, x.Text, x.Answer!.Text, new EvaluationDto(x.Answer.Evaluation!.Score, x.Answer.Evaluation.Strengths, x.Answer.Evaluation.Weaknesses, x.Answer.Evaluation.ImprovementSuggestion, x.Answer.Evaluation.Source, x.Answer.Evaluation.ErrorMessage, x.Answer.Evaluation.RawGeminiResponse), x.Concept, x.Difficulty)).ToList();
         var scoredAnswers = answers.Where(x => x.Evaluation.Score >= 0).ToList();
@@ -89,12 +89,12 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
         return new InterviewReportDto(session.Id, session.Topic, session.Difficulty, average, await gemini.GenerateFinalReportAsync(session.Track, average), answers, strong, weak, recommended, summary, breakdown, progression, roadmap, session.Track);
     }
 
-    public async Task<IReadOnlyList<InterviewHistoryItemDto>> GetHistoryAsync() => await db.InterviewSessions.Where(x => x.IsCompleted).Include(x => x.Questions).ThenInclude(x => x.Answer).ThenInclude(x => x!.Evaluation).OrderByDescending(x => x.CompletedAtUtc).Select(x => new InterviewHistoryItemDto(x.Id, x.CreatedAtUtc, x.Topic, x.Difficulty, (int)Math.Round(x.Questions.Where(q => q.Answer!.Evaluation != null).Average(q => q.Answer!.Evaluation!.Score)), "Tamamlandı")).ToListAsync();
+    public async Task<IReadOnlyList<InterviewHistoryItemDto>> GetHistoryAsync(Guid userId) => await db.InterviewSessions.Where(x => x.IsCompleted && x.UserId == userId).Include(x => x.Questions).ThenInclude(x => x.Answer).ThenInclude(x => x!.Evaluation).OrderByDescending(x => x.CompletedAtUtc).Select(x => new InterviewHistoryItemDto(x.Id, x.CreatedAtUtc, x.Topic, x.Difficulty, (int)Math.Round(x.Questions.Where(q => q.Answer!.Evaluation != null).Average(q => q.Answer!.Evaluation!.Score)), "Tamamlandı")).ToListAsync();
 
-    public async Task<DashboardSummaryDto> GetDashboardAsync()
+    public async Task<DashboardSummaryDto> GetDashboardAsync(Guid userId)
     {
-        var history = await GetHistoryAsync();
-        var sessions = await db.InterviewSessions.Where(x => x.IsCompleted).Include(x => x.Questions).ThenInclude(x => x.Answer).ThenInclude(x => x!.Evaluation).ToListAsync();
+        var history = await GetHistoryAsync(userId);
+        var sessions = await db.InterviewSessions.Where(x => x.IsCompleted && x.UserId == userId).Include(x => x.Questions).ThenInclude(x => x.Answer).ThenInclude(x => x!.Evaluation).ToListAsync();
         var scoreHistory = history.OrderBy(x => x.CreatedAtUtc).Select(x => new ScoreHistoryPointDto(x.CreatedAtUtc, x.AverageScore, x.Topic)).ToList();
         var performance = sessions.GroupBy(x => x.Topic).Select(x => new TopicPerformanceDto(x.Key, (int)Math.Round(x.SelectMany(s => s.Questions).Where(q => q.Answer?.Evaluation != null).Average(q => q.Answer!.Evaluation!.Score)), x.Count())).ToList();
         var scores = history.Select(x => x.AverageScore).ToList();

@@ -69,6 +69,19 @@ Open `http://localhost:5173` to use the full React interview flow. The frontend 
 
 The backend loads `GEMINI_API_KEY` and `GEMINI_MODEL` from a machine environment variable first, then from the repository `.env` file, and finally uses the safe `Gemini:ApiKey` / `Gemini:Model` fallback in `appsettings.json`. Do not put real keys in `appsettings.json`. `ConnectionStrings:DefaultConnection` must point to an available SQL Server or LocalDB instance.
 
+## Authentication
+
+Register with `POST /api/auth/register` and login with `POST /api/auth/login`. Both return a JWT. The frontend stores it in localStorage and sends it as a Bearer token. Interview, history and dashboard endpoints require authentication and only return the current user's sessions.
+
+Add these values to the root `.env` file (never commit it):
+
+```env
+JWT_SECRET=replace_with_a_long_random_secret
+JWT_ISSUER=AIInterviewSimulator
+JWT_AUDIENCE=AIInterviewSimulatorUsers
+JWT_EXPIRES_MINUTES=120
+```
+
 ## Common local errors
 
 - **Invalid column name `CompletedAtUtc`, `Concept`, or `Difficulty`:** run `dotnet ef database update` from `backend/AIInterview.API`. See [database reset notes](docs/database-reset.md) if the local schema is damaged.

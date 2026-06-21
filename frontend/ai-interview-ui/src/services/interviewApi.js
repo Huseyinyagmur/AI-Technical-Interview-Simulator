@@ -1,7 +1,8 @@
 const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5268/api';
+const token = () => JSON.parse(localStorage.getItem('auth') || 'null')?.token;
 async function request(path, options = {}) {
   try {
-    const response = await fetch(`${baseUrl}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
+    const response = await fetch(`${baseUrl}${path}`, { headers: { 'Content-Type': 'application/json', ...(token() ? { Authorization: `Bearer ${token()}` } : {}) }, ...options });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       const fallback = response.status >= 500 ? 'Backend hatası oluştu. API çalışıyor mu ve migration uygulandı mı?' : 'İstek tamamlanamadı.';

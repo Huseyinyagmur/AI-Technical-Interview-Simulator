@@ -8,6 +8,9 @@ public class StartInterviewRequest
     public string? Track { get; set; }
     public string Difficulty { get; set; } = "Junior";
 }
+public class RegisterRequest { [Required, MaxLength(150)] public string FullName { get; set; } = string.Empty; [Required, EmailAddress] public string Email { get; set; } = string.Empty; [Required, MinLength(6)] public string Password { get; set; } = string.Empty; }
+public class LoginRequest { [Required, EmailAddress] public string Email { get; set; } = string.Empty; [Required] public string Password { get; set; } = string.Empty; }
+public record AuthResponse(string Token, Guid UserId, string FullName, string Email);
 public class SubmitAnswerRequest
 {
     [Range(1, int.MaxValue)] public int QuestionId { get; set; }
