@@ -6,4 +6,5 @@ import './home.css';
 import './dashboard.css';
 import './track-selection.css';
 import './auth.css';
+import './pdf.css';
 createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);

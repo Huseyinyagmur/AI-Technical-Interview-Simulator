@@ -20,3 +20,4 @@ export const submitAnswer = (sessionId, questionId, answer) => request(`/intervi
 export const getReport = (sessionId) => request(`/interviews/${sessionId}/report`);
 export const getHistory = () => request('/interviews/history');
 export const getDashboard = () => request('/dashboard/summary');
+export async function downloadReportPdf(sessionId) { const response = await fetch(`${baseUrl}/interviews/${sessionId}/report/pdf`, { headers: { Authorization: `Bearer ${token()}` } }); if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.message || 'PDF raporu indirilemedi.'); } const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'interview-report.pdf'; link.click(); URL.revokeObjectURL(url); }

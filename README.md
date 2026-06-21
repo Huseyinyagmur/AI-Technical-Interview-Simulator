@@ -82,6 +82,10 @@ JWT_AUDIENCE=AIInterviewSimulatorUsers
 JWT_EXPIRES_MINUTES=120
 ```
 
+## PDF report export
+
+Completed interview reports can be downloaded from the report screen. The protected endpoint is `GET /api/interviews/{sessionId}/report/pdf`; it generates an A4 PDF containing summary scores, study recommendations and per-question feedback. The endpoint requires a valid JWT and verifies that the requested interview belongs to the current user.
+
 ## Common local errors
 
 - **Invalid column name `CompletedAtUtc`, `Concept`, or `Difficulty`:** run `dotnet ef database update` from `backend/AIInterview.API`. See [database reset notes](docs/database-reset.md) if the local schema is damaged.
