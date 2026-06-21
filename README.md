@@ -11,8 +11,9 @@ A beginner-friendly MVP for practising technical interview answers. Select a top
 ## Setup
 
 1. Create a SQL Server database by running `database/schema.sql`, or create the database named in the API connection string.
-2. In `backend/AIInterview.API/appsettings.json`, set `ConnectionStrings:DefaultConnection` and `Gemini:ApiKey`. You may also change `Gemini:Model`.
-3. Install the frontend dependencies with `npm install` in `frontend/ai-interview-ui`.
+2. Copy `.env.example` to `.env` at the repository root. Set `GEMINI_API_KEY` to your Gemini API key; optionally set `GEMINI_MODEL` (for example, `gemini-2.5-flash`). `.env` is ignored by Git and must never be committed.
+3. In `backend/AIInterview.API/appsettings.json`, set `ConnectionStrings:DefaultConnection`.
+4. Install the frontend dependencies with `npm install` in `frontend/ai-interview-ui`.
 
 ## Run the backend
 
@@ -35,4 +36,4 @@ The frontend expects the API at `http://localhost:5181/api`. Set `VITE_API_URL` 
 
 ## Configuration
 
-`Gemini:ApiKey` is required for live AI responses. Do not commit a real key; prefer an environment variable such as `Gemini__ApiKey`. `ConnectionStrings:DefaultConnection` must point to an available SQL Server or LocalDB instance.
+The backend loads `GEMINI_API_KEY` and `GEMINI_MODEL` from a machine environment variable first, then from the repository `.env` file, and finally uses the safe `Gemini:ApiKey` / `Gemini:Model` fallback in `appsettings.json`. Do not put real keys in `appsettings.json`. `ConnectionStrings:DefaultConnection` must point to an available SQL Server or LocalDB instance.

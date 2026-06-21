@@ -1,8 +1,10 @@
 using AIInterview.API.Data;
+using AIInterview.API.Helpers;
 using AIInterview.API.Interfaces;
 using AIInterview.API.Services;
 using Microsoft.EntityFrameworkCore;
 
+DotEnv.Load();
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

@@ -18,3 +18,10 @@ public record StartInterviewResponse(Guid SessionId, QuestionDto Question, int T
 public record SubmitAnswerResponse(EvaluationDto Evaluation, QuestionDto? NextQuestion, bool IsCompleted);
 public record ReportAnswerDto(int QuestionNumber, string Question, string Answer, EvaluationDto Evaluation);
 public record InterviewReportDto(Guid SessionId, string Topic, string Difficulty, int AverageScore, string OverallFeedback, IReadOnlyList<ReportAnswerDto> Answers);
+public class DebugEvaluateRequest
+{
+    [Required] public string Topic { get; set; } = string.Empty;
+    [Required] public string Question { get; set; } = string.Empty;
+    [Required] public string Answer { get; set; } = string.Empty;
+}
+public record DebugEvaluateResponse(string RawGeminiResponse, string RawApiResponse, string? ExtractedJson, bool ParseSucceeded, EvaluationDto? Evaluation, string? ParseError);
