@@ -38,7 +38,10 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
         var session = await db.InterviewSessions.Include(x => x.Questions).ThenInclude(x => x.Answer).FirstOrDefaultAsync(x => x.Id == sessionId);
         var question = session?.Questions.SingleOrDefault(x => x.Id == request.QuestionId);
         if (session is null || question is null || question.Answer is not null || session.IsCompleted) return null;
+        Console.WriteLine("[EVALUATION START]");
+        Console.WriteLine($"[TOPIC] {session.Topic}");
         Console.WriteLine($"[CONCEPT] {question.Concept}");
+        Console.WriteLine($"[DIFFICULTY] {question.Difficulty}");
         Console.WriteLine($"[QUESTION] {question.Text}");
         Console.WriteLine($"[ANSWER] {request.Answer}");
         var evaluation = await gemini.EvaluateAnswerAsync(session.Topic, question.Text, request.Answer);
@@ -47,7 +50,7 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
         if (question.QuestionNumber < QuestionsPerInterview)
         {
             var number = question.QuestionNumber + 1;
-            var scores = session.Questions.Where(x => x.Answer?.Evaluation is not null).Select(x => x.Answer!.Evaluation!.Score).ToList();
+            var scores = session.Questions.Where(x => x.Answer?.Evaluation is not null && x.Answer.Evaluation.Score >= 0).Select(x => x.Answer!.Evaluation!.Score).ToList();
             session.Difficulty = GetAdaptiveDifficulty(session.Difficulty, scores);
             var previousConcepts = session.Questions.OrderBy(x => x.QuestionNumber).Select(x => x.Concept).ToList();
             var concept = SelectConcept(session.Topic, previousConcepts);
@@ -66,9 +69,10 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
     {
         var session = await db.InterviewSessions.Include(x => x.Questions).ThenInclude(x => x.Answer).ThenInclude(x => x!.Evaluation).FirstOrDefaultAsync(x => x.Id == sessionId);
         if (session is null || !session.IsCompleted) return null;
-        var answers = session.Questions.OrderBy(x => x.QuestionNumber).Where(x => x.Answer?.Evaluation is not null).Select(x => new ReportAnswerDto(x.QuestionNumber, x.Text, x.Answer!.Text, new EvaluationDto(x.Answer.Evaluation!.Score, x.Answer.Evaluation.Strengths, x.Answer.Evaluation.Weaknesses, x.Answer.Evaluation.ImprovementSuggestion, x.Answer.Evaluation.Source, x.Answer.Evaluation.ErrorMessage), x.Concept, x.Difficulty)).ToList();
-        var average = answers.Count == 0 ? 0 : (int)Math.Round(answers.Average(x => x.Evaluation.Score));
-        var topicScores = answers.GroupBy(x => x.Concept).Select(x => new { Concept = x.Key, Score = x.Average(y => y.Evaluation.Score) }).ToList();
+        var answers = session.Questions.OrderBy(x => x.QuestionNumber).Where(x => x.Answer?.Evaluation is not null).Select(x => new ReportAnswerDto(x.QuestionNumber, x.Text, x.Answer!.Text, new EvaluationDto(x.Answer.Evaluation!.Score, x.Answer.Evaluation.Strengths, x.Answer.Evaluation.Weaknesses, x.Answer.Evaluation.ImprovementSuggestion, x.Answer.Evaluation.Source, x.Answer.Evaluation.ErrorMessage, x.Answer.Evaluation.RawGeminiResponse), x.Concept, x.Difficulty)).ToList();
+        var scoredAnswers = answers.Where(x => x.Evaluation.Score >= 0).ToList();
+        var average = scoredAnswers.Count == 0 ? 0 : (int)Math.Round(scoredAnswers.Average(x => x.Evaluation.Score));
+        var topicScores = scoredAnswers.GroupBy(x => x.Concept).Select(x => new { Concept = x.Key, Score = x.Average(y => y.Evaluation.Score) }).ToList();
         var strong = topicScores.Where(x => x.Score >= 75).OrderByDescending(x => x.Score).Select(x => x.Concept).ToList();
         var weak = topicScores.Where(x => x.Score < 70).OrderBy(x => x.Score).Select(x => x.Concept).ToList();
         var recommended = weak.Any() ? weak : topicScores.OrderBy(x => x.Score).Take(2).Select(x => x.Concept).ToList();

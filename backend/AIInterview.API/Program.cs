@@ -18,6 +18,9 @@ builder.Services.AddCors(options => options.AddPolicy("frontend", policy => poli
     .AllowAnyMethod()));
 
 var app = builder.Build();
+var configuredGeminiModel = Environment.GetEnvironmentVariable("GEMINI_MODEL") ?? builder.Configuration["Gemini:Model"] ?? "gemini-2.5-flash";
+app.Logger.LogInformation("[GEMINI MODEL] {Model}", configuredGeminiModel);
+Console.WriteLine($"[GEMINI MODEL] {configuredGeminiModel}");
 if (app.Environment.IsDevelopment()) { app.UseSwagger(); app.UseSwaggerUI(); }
 // Do not migrate automatically: production deployments should control schema changes.
 // The warning makes a missing local migration immediately obvious in the console.

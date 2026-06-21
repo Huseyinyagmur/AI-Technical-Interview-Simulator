@@ -30,5 +30,5 @@ public class DebugEvaluateRequest
     [Required] public string Question { get; set; } = string.Empty;
     [Required] public string Answer { get; set; } = string.Empty;
 }
-public record DebugEvaluateResponse(string RawGeminiResponse, EvaluationDto? ParsedEvaluation, string Source, string? Error);
+public record DebugEvaluateResponse(string RawGeminiResponse, string? ExtractedJson, EvaluationDto? ParsedEvaluation, string Source, string? ErrorMessage);
 public record LastEvaluationDebugDto(string? RawGeminiResponse, EvaluationDto ParsedEvaluation, string Source, string? Error);
