@@ -12,11 +12,14 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
     private readonly string _apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? configuration["Gemini:ApiKey"] ?? string.Empty;
     private readonly string _model = Environment.GetEnvironmentVariable("GEMINI_MODEL") ?? configuration["Gemini:Model"] ?? "gemini-1.5-flash";
 
-    public async Task<string> GenerateQuestionAsync(string topic, string difficulty, int questionNumber)
+    public async Task<string> GenerateQuestionAsync(string topic, string difficulty, int questionNumber, string concept, IReadOnlyList<string> previousConcepts, IReadOnlyList<int> previousScores)
     {
         var template = PromptReader.Read("generate-question.txt");
         var prompt = template.Replace("{{topic}}", topic).Replace("{{difficulty}}", difficulty)
-            .Replace("{{questionNumber}}", questionNumber.ToString());
+            .Replace("{{questionNumber}}", questionNumber.ToString())
+            .Replace("{{concept}}", concept)
+            .Replace("{{previousConcepts}}", previousConcepts.Count == 0 ? "Yok" : string.Join(", ", previousConcepts))
+            .Replace("{{previousScores}}", previousScores.Count == 0 ? "Yok" : string.Join(", ", previousScores));
         var response = await GenerateTextAsync(prompt);
         return string.IsNullOrWhiteSpace(response) ? FallbackQuestion(topic, questionNumber) : response.Trim().Trim('"');
     }

@@ -28,4 +28,7 @@ public class InterviewsController(IInterviewService interviewService) : Controll
         var report = await interviewService.GetReportAsync(sessionId);
         return report is null ? NotFound(new { message = "The session does not exist or is not complete." }) : Ok(report);
     }
+
+    [HttpGet("history")]
+    public async Task<ActionResult<IReadOnlyList<InterviewHistoryItemDto>>> History() => Ok(await interviewService.GetHistoryAsync());
 }

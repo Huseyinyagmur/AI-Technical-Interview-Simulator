@@ -1,1 +1,3 @@
-Samimi bir teknik mülakatçı ol. {{topic}} hakkında tam olarak bir adet {{difficulty}} seviyesinde teknik mülakat sorusu oluştur. Bu, beş soruluk görüşmenin {{questionNumber}}. sorusu. Yalnızca Türkçe soru metnini döndür; başlık, numaralandırma, cevap veya açıklama ekleme.
+Samimi bir teknik mülakatçı ol. {{topic}} hakkında tam olarak bir adet {{difficulty}} seviyesinde teknik mülakat sorusu oluştur. Bu, beş soruluk görüşmenin {{questionNumber}}. sorusu.
+Bu sorunun zorunlu kavramı: {{concept}}. Önceki kavramlar: {{previousConcepts}}. Önceki puanlar: {{previousScores}}.
+Önceki kavramları tekrar sorma; özellikle ardışık sorularda aynı kavramı asla kullanma. Yalnızca Türkçe soru metnini döndür; başlık, numaralandırma, cevap veya açıklama ekleme.

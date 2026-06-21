@@ -6,6 +6,7 @@ public class InterviewSession
     public string Topic { get; set; } = string.Empty;
     public string Difficulty { get; set; } = "Junior";
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? CompletedAtUtc { get; set; }
     public bool IsCompleted { get; set; }
     public ICollection<InterviewQuestion> Questions { get; set; } = new List<InterviewQuestion>();
 }

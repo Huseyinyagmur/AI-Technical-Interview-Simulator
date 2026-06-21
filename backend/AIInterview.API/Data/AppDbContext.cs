@@ -15,6 +15,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<InterviewSession>().Property(x => x.Topic).HasMaxLength(100).IsRequired();
         modelBuilder.Entity<InterviewSession>().Property(x => x.Difficulty).HasMaxLength(50).IsRequired();
         modelBuilder.Entity<InterviewQuestion>().Property(x => x.Text).IsRequired();
+        modelBuilder.Entity<InterviewQuestion>().Property(x => x.Concept).HasMaxLength(100).IsRequired();
+        modelBuilder.Entity<InterviewQuestion>().Property(x => x.Difficulty).HasMaxLength(50).IsRequired();
         modelBuilder.Entity<InterviewAnswer>().Property(x => x.Text).IsRequired();
 
         modelBuilder.Entity<InterviewSession>()
