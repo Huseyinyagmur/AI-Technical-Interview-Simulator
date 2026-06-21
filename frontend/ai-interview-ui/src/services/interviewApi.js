@@ -1,8 +1,17 @@
-const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5181/api';
+const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5268/api';
 async function request(path, options = {}) {
-  const response = await fetch(`${baseUrl}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
-  if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.message || 'Request failed.'); }
-  return response.json();
+  try {
+    const response = await fetch(`${baseUrl}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      const fallback = response.status >= 500 ? 'Backend hatası oluştu. API çalışıyor mu ve migration uygulandı mı?' : 'İstek tamamlanamadı.';
+      throw new Error(body.message || fallback);
+    }
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) throw new Error('Backend bağlantısı başarısız. API çalışıyor mu ve migration uygulandı mı?');
+    throw error;
+  }
 }
 export const startInterview = (topic, difficulty) => request('/interviews/start', { method: 'POST', body: JSON.stringify({ topic, difficulty }) });
 export const submitAnswer = (sessionId, questionId, answer) => request(`/interviews/${sessionId}/answer`, { method: 'POST', body: JSON.stringify({ questionId, answer }) });

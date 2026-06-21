@@ -26,14 +26,16 @@ React calls the ASP.NET Core Web API. `InterviewsController` delegates interview
 1. Create a SQL Server database by running `database/schema.sql`, or create the database named in the API connection string.
 2. Copy `.env.example` to `.env` at the repository root. Set `GEMINI_API_KEY` to your Gemini API key; optionally set `GEMINI_MODEL` (for example, `gemini-2.5-flash`). `.env` is ignored by Git and must never be committed.
 3. In `backend/AIInterview.API/appsettings.json`, set `ConnectionStrings:DefaultConnection`.
-4. Install the frontend dependencies with `npm install` in `frontend/ai-interview-ui`.
+4. Copy `frontend/ai-interview-ui/.env.example` to `frontend/ai-interview-ui/.env`. The default API URL is `http://localhost:5268/api`.
+5. Install the frontend dependencies with `npm install` in `frontend/ai-interview-ui`.
 
 ## Run the backend
 
 ```powershell
 cd backend/AIInterview.API
 dotnet restore
-dotnet run --urls http://localhost:5181
+dotnet ef database update
+dotnet run
 ```
 
 Open Swagger at `http://localhost:5181/swagger` in Development. The API has local fallbacks for questions and evaluations when the Gemini key is unset, which is useful for checking the flow.
@@ -45,11 +47,19 @@ cd frontend/ai-interview-ui
 npm run dev
 ```
 
-The frontend expects the API at `http://localhost:5181/api`. Set `VITE_API_URL` if you use another URL.
+The frontend expects the API at `http://localhost:5268/api`. Set `VITE_API_BASE_URL` if you use another URL.
+
+Open `http://localhost:5173` to use the full React interview flow. The frontend uses `VITE_API_BASE_URL`, defaulting to `http://localhost:5268/api`.
 
 ## Configuration
 
 The backend loads `GEMINI_API_KEY` and `GEMINI_MODEL` from a machine environment variable first, then from the repository `.env` file, and finally uses the safe `Gemini:ApiKey` / `Gemini:Model` fallback in `appsettings.json`. Do not put real keys in `appsettings.json`. `ConnectionStrings:DefaultConnection` must point to an available SQL Server or LocalDB instance.
+
+## Common local errors
+
+- **Invalid column name `CompletedAtUtc`, `Concept`, or `Difficulty`:** run `dotnet ef database update` from `backend/AIInterview.API`. See [database reset notes](docs/database-reset.md) if the local schema is damaged.
+- **Gemini API key missing:** add `GEMINI_API_KEY` to the root `.env` file and restart the API.
+- **CORS or backend connection error:** verify the API is running at `http://localhost:5268` and the frontend `.env` uses `VITE_API_BASE_URL=http://localhost:5268/api`.
 
 ## API
 

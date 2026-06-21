@@ -1,10 +1,14 @@
 using System;
+using AIInterview.API.Data;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace AIInterview.API.Migrations;
 
+[DbContext(typeof(AppDbContext))]
+[Migration("20260621120000_PortfolioEnhancements")]
 public partial class PortfolioEnhancements : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
