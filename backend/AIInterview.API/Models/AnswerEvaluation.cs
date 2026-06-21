@@ -10,5 +10,6 @@ public class AnswerEvaluation
     public string ImprovementSuggestion { get; set; } = string.Empty;
     public string Source { get; set; } = "MissingEvaluation";
     public string? ErrorMessage { get; set; }
+    public string? RawGeminiResponse { get; set; }
     public InterviewAnswer? InterviewAnswer { get; set; }
 }

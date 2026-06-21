@@ -33,22 +33,22 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         var response = await GenerateTextDetailsAsync(prompt);
         // Log before any cleanup or extraction: this is the exact text returned by the model.
         logger.LogInformation("[GEMINI EVALUATION RESPONSE] {GeminiResponse}", response.Text);
-        logger.LogInformation("[GEMINI RAW] {GeminiResponse}", response.Text);
+        logger.LogInformation("[GEMINI RAW RESPONSE] {GeminiResponse}", response.Text);
         if (string.IsNullOrWhiteSpace(response.Text))
         {
             var source = string.IsNullOrWhiteSpace(response.Error) ? "MissingEvaluation" : "Fallback";
             logger.LogWarning("[EVALUATION SOURCE] {Source}. {Error}", source, response.Error ?? "empty Gemini response");
-            return CreateFailureEvaluation(source, response.Error ?? "Evaluation failed: empty Gemini response");
+            return CreateFailureEvaluation(source, response.Error ?? "Evaluation failed: empty Gemini response", response.Text);
         }
         if (TryParseEvaluation(response.Text, out var evaluation, out _, out _))
         {
             logger.LogInformation("[EVALUATION SOURCE] Gemini");
-            return evaluation;
+            return evaluation with { RawGeminiResponse = response.Text };
         }
 
         // A provider hiccup should never prevent a learner from completing an interview.
         logger.LogWarning("[EVALUATION SOURCE] ParseFailed");
-        return CreateFailureEvaluation("ParseFailed", "Evaluation failed: parse error");
+        return CreateFailureEvaluation("ParseFailed", "Evaluation failed: parse error", response.Text);
     }
 
     public async Task<DebugEvaluateResponse> DebugEvaluateAnswerAsync(string topic, string concept, string difficulty, string question, string answer)
@@ -59,7 +59,7 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         logger.LogInformation("[GEMINI EVALUATION REQUEST] QuestionType={QuestionType}; Prompt={Prompt}", DetermineQuestionType(question), prompt);
         var response = await GenerateTextDetailsAsync(prompt);
         logger.LogInformation("[GEMINI EVALUATION RESPONSE] {GeminiResponse}", response.Text);
-        logger.LogInformation("[GEMINI RAW] {GeminiResponse}", response.Text);
+        logger.LogInformation("[GEMINI RAW RESPONSE] {GeminiResponse}", response.Text);
         var parsed = TryParseEvaluation(response.Text, out var evaluation, out _, out var parseError);
         var source = parsed ? "Gemini" : string.IsNullOrWhiteSpace(response.Text) ? "MissingEvaluation" : "ParseFailed";
         return new DebugEvaluateResponse(response.Text, parsed ? evaluation : null, source, parseError ?? response.Error);
@@ -128,7 +128,7 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         if (string.IsNullOrWhiteSpace(response))
         {
             parseError = "Gemini değerlendirme yanıtı boş.";
-            logger.LogError("[GEMINI PARSE ERROR] {ParseError}", parseError);
+            logger.LogError("[PARSE ERROR] {ParseError}", parseError);
             return false;
         }
 
@@ -138,12 +138,12 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         if (!TryExtractJsonObject(cleaned, out var json))
         {
             parseError = "Yanıtta dengeli bir JSON nesnesi bulunamadı.";
-            logger.LogError("[GEMINI PARSE ERROR] {ParseError}. Ham yanıt: {RawResponse}", parseError, response);
+            logger.LogError("[PARSE ERROR] {ParseError}. Ham yanıt: {RawResponse}", parseError, response);
             return false;
         }
 
         extractedJson = json;
-        logger.LogInformation("[GEMINI JSON] {EvaluationJson}", json);
+        logger.LogInformation("[PARSED JSON] {EvaluationJson}", json);
         try
         {
             using var document = JsonDocument.Parse(json);
@@ -157,7 +157,7 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
             parseError = ex.Message;
-            logger.LogError(ex, "[GEMINI PARSE ERROR] {ParseError}. Ham yanıt: {RawResponse}. Çıkarılan JSON: {EvaluationJson}", parseError, response, json);
+            logger.LogError(ex, "[PARSE ERROR] {ParseError}. Ham yanıt: {RawResponse}. Çıkarılan JSON: {EvaluationJson}", parseError, response, json);
             return false;
         }
     }
@@ -171,8 +171,8 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         return false;
     }
 
-    private static EvaluationDto CreateFailureEvaluation(string source, string message) =>
-        new(0, string.Empty, message, "Gemini yapılandırmasını ve uygulama loglarını kontrol edip cevabı yeniden gönderin.", source);
+    private static EvaluationDto CreateFailureEvaluation(string source, string message, string? rawResponse) =>
+        new(0, string.Empty, message, "Gemini yapılandırmasını ve uygulama loglarını kontrol edip cevabı yeniden gönderin.", source, message, rawResponse);
 
     private static EvaluationDto CreateRuleBasedFallback(string question, string answer)
     {

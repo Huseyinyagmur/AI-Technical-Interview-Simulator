@@ -13,7 +13,7 @@ public class SubmitAnswerRequest
     [Required, MinLength(2)] public string Answer { get; set; } = string.Empty;
 }
 public record QuestionDto(int Id, int QuestionNumber, string Text, string? Concept = null, string? Difficulty = null);
-public record EvaluationDto(int Score, string Strengths, string Weaknesses, string ImprovementSuggestion, string Source = "Gemini");
+public record EvaluationDto(int Score, string Strengths, string Weaknesses, string ImprovementSuggestion, string Source = "Gemini", string? ErrorMessage = null, string? RawGeminiResponse = null);
 public record StartInterviewResponse(Guid SessionId, QuestionDto Question, int TotalQuestions = 5);
 public record SubmitAnswerResponse(EvaluationDto Evaluation, QuestionDto? NextQuestion, bool IsCompleted);
 public record ReportAnswerDto(int QuestionNumber, string Question, string Answer, EvaluationDto Evaluation, string Concept, string Difficulty);
@@ -31,3 +31,4 @@ public class DebugEvaluateRequest
     [Required] public string Answer { get; set; } = string.Empty;
 }
 public record DebugEvaluateResponse(string RawGeminiResponse, EvaluationDto? ParsedEvaluation, string Source, string? Error);
+public record LastEvaluationDebugDto(string? RawGeminiResponse, EvaluationDto ParsedEvaluation, string Source, string? Error);
