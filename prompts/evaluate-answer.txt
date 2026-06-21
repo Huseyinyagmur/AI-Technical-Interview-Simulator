@@ -1,4 +1,16 @@
-Evaluate the candidate's answer to this {{topic}} interview question.
-Question: {{question}}
-Candidate answer: {{answer}}
-Return ONLY valid JSON in this exact shape: {"score":0,"strengths":"...","weaknesses":"...","improvementSuggestion":"..."}. Score must be an integer from 0 to 100. Be constructive and concise.
+Bu {{topic}} teknik mülakat sorusuna adayın verdiği cevabı değerlendir.
+Soru: {{question}}
+Adayın cevabı: {{answer}}
+
+Yanıtın yalnızca geçerli JSON olmalıdır. Markdown kod bloğu, üç ters tırnak, açıklama, başlık veya JSON öncesi/sonrası başka metin ekleme.
+Tüm metin değerlerini yalnızca Türkçe yaz. `score`, 0 ile 100 arasında tam sayı olmalıdır.
+
+Zorunlu ve tek yanıt biçimi örneği:
+{
+  "score": 75,
+  "strengths": "Kavramı doğru tanımladı ve uygun bir örnek verdi.",
+  "weaknesses": "Performans etkisine değinmedi.",
+  "improvementSuggestion": "Cevabınıza performansla ilgili kısa bir örnek ekleyin."
+}
+
+Alan adlarını değiştirme, alan ekleme ve JSON dizisi döndürme.
