@@ -27,7 +27,8 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
     public async Task<EvaluationDto> EvaluateAnswerAsync(string topic, string question, string answer)
     {
         var template = PromptReader.Read("evaluate-answer.txt");
-        var prompt = template.Replace("{{topic}}", topic).Replace("{{question}}", question).Replace("{{answer}}", answer);
+        var prompt = template.Replace("{{topic}}", topic).Replace("{{question}}", question).Replace("{{answer}}", answer)
+            .Replace("{{questionType}}", DetermineQuestionType(question));
         var response = await GenerateTextDetailsAsync(prompt);
         // Log before any cleanup or extraction: this is the exact text returned by the model.
         logger.LogInformation("[GEMINI RAW] {GeminiResponse}", response.Text);
@@ -41,7 +42,8 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
     public async Task<DebugEvaluateResponse> DebugEvaluateAnswerAsync(string topic, string question, string answer)
     {
         var template = PromptReader.Read("evaluate-answer.txt");
-        var prompt = template.Replace("{{topic}}", topic).Replace("{{question}}", question).Replace("{{answer}}", answer);
+        var prompt = template.Replace("{{topic}}", topic).Replace("{{question}}", question).Replace("{{answer}}", answer)
+            .Replace("{{questionType}}", DetermineQuestionType(question));
         var response = await GenerateTextDetailsAsync(prompt);
         logger.LogInformation("[GEMINI RAW] {GeminiResponse}", response.Text);
         var parsed = TryParseEvaluation(response.Text, out var evaluation, out var json, out var parseError);
@@ -150,6 +152,16 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         if (!root.TryGetProperty("score", out var value)) return 50;
         if (value.TryGetInt32(out var numericScore)) return Math.Clamp(numericScore, 0, 100);
         return value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var stringScore) ? Math.Clamp(stringScore, 0, 100) : 50;
+    }
+
+    private static string DetermineQuestionType(string question)
+    {
+        var normalized = question.ToLowerInvariant();
+        var asksForSqlCode = (normalized.Contains("sql") || normalized.Contains("sorgu") || normalized.Contains("query")) &&
+                             (normalized.Contains("yaz") || normalized.Contains("oluştur") || normalized.Contains("kod") || normalized.Contains("statement") || normalized.Contains("query"));
+        if (asksForSqlCode) return "SQL_CODE_REQUIRED";
+        if (normalized.Contains("açıkla") || normalized.Contains("anlat") || normalized.Contains("tanımla") || normalized.Contains("describe") || normalized.Contains("explain") || normalized.Contains("junior")) return "EXPLANATION";
+        return "GENERAL";
     }
 
     private static string TryDecodeEscapedJson(string text)
