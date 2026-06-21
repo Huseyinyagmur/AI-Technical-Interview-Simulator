@@ -1,0 +1,5 @@
+import { motion } from 'framer-motion';
+
+const accents = { 'csharp-backend': '#6366F1', 'aspnet-core': '#3B82F6', 'sql-developer': '#14B8A6', 'software-fundamentals': '#F59E0B', 'computer-vision': '#EC4899', mixed: '#22C55E' };
+const icons = { 'csharp-backend': '⌘', 'aspnet-core': '⚡', 'sql-developer': '◫', 'software-fundamentals': '◆', 'computer-vision': '◉', mixed: '✦' };
+export default function TrackCard({ track, selected, onSelect }) { const accent = accents[track.id] || '#6366F1'; return <motion.button type="button" className={`saas-track-card ${selected ? 'selected' : ''}`} style={{ '--accent': accent }} onClick={() => onSelect(track.id)} whileHover={{ y: -4, boxShadow: '0 16px 34px rgba(15, 23, 42, 0.10)' }} whileTap={{ scale: .99 }} transition={{ duration: .18 }}><span className="saas-track-icon">{icons[track.id] || '•'}</span>{selected && <span className="selected-check">✓</span>}<h3>{track.title}</h3><p>{track.description}</p><div className="track-tags">{track.domains.slice(0, 3).map(domain => <span key={domain}>{domain}</span>)}</div><footer><span>Junior → Senior</span><span>~25 dk</span></footer></motion.button>; }
