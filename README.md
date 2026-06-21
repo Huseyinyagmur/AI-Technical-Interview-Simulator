@@ -1,8 +1,8 @@
 # AI Technical Interview Simulator
 
-A beginner-friendly MVP for practising technical interview answers. Select a topic, complete five AI-generated questions, and receive answer feedback plus a final report.
+Yapay zeka destekli teknik mülakat simülatörü. Kullanıcıların gerçek teknik mülakat deneyimi yaşayabilmesini, cevaplarını Gemini ile değerlendirebilmesini ve kişiselleştirilmiş gelişim raporları alabilmesini sağlayan full-stack web uygulaması.
 
-## Features
+## Öne Çıkan Özellikler
 
 - Gemini-powered Turkish technical questions and structured answer evaluations
 - Concept-aware interviews: OOP sessions rotate through encapsulation, inheritance, polymorphism, abstraction, interfaces, abstract classes, SOLID and design patterns
@@ -12,7 +12,19 @@ A beginner-friendly MVP for practising technical interview answers. Select a top
 - SQL Server persistence through Entity Framework Core
 - Career-oriented interview tracks, adaptive levels, question-bank variation and study-roadmap reports
 
-## Interview tracks
+## Proje Özeti
+
+Bu proje, teknik mülakat pratiğini yalnızca soru-cevap akışı olmaktan çıkarıp ölçülebilir bir gelişim deneyimine dönüştürür. Kullanıcılar bir kariyer track'i seçer, seviyelerine uygun soruları yanıtlar, AI değerlendirmesi ve detaylı raporlarla eksiklerini görür.
+
+### Temel Kabiliyetler
+
+- Gemini ile teknik doğruluk, açıklama kalitesi, örnek kullanımı ve problem çözme yaklaşımının değerlendirilmesi
+- Kullanıcının ortalama puanına göre Junior, Mid ve Senior seviyeleri arasında adaptif ilerleme
+- JWT ile güvenli giriş/kayıt ve kullanıcı bazlı dashboard, history ve raporlar
+- Tamamlanan mülakatlar için profesyonel A4 PDF rapor çıktısı
+- Track, konu, konsept ve zorluk seviyesine göre kalıcı performans analitiği
+
+## Desteklenen Mülakat Trackleri
 
 | Track | Focus |
 | --- | --- |
@@ -25,17 +37,17 @@ A beginner-friendly MVP for practising technical interview answers. Select a top
 
 Each interview records concept/domain coverage, adaptive difficulty progression, topic breakdown and a recommended study roadmap.
 
-## Architecture
+## Mimari
 
 React calls the ASP.NET Core Web API. `InterviewsController` delegates interview flow to `InterviewService`; `GeminiService` owns provider prompts, response logging and JSON evaluation parsing. EF Core maps `InterviewSession → InterviewQuestion → InterviewAnswer → AnswerEvaluation` to SQL Server. Each question records its concept and effective difficulty, which makes reports and analytics reproducible.
 
-## Technologies
+## Teknolojiler
 
 - ASP.NET Core 8 Web API, Entity Framework Core, SQL Server
 - React and Vite
 - Google Gemini API
 
-## Setup
+## Kurulum
 
 1. Create a SQL Server database by running `database/schema.sql`, or create the database named in the API connection string.
 2. Copy `.env.example` to `.env` at the repository root. Set `GEMINI_API_KEY` to your Gemini API key; optionally set `GEMINI_MODEL` (for example, `gemini-2.5-flash`). `.env` is ignored by Git and must never be committed.
@@ -130,3 +142,83 @@ React UI → ASP.NET Core API → InterviewService → GeminiService
 - Authenticated learner profiles and per-user dashboard filtering
 - Automated tests for adaptive difficulty and Gemini response fixtures
 - Exportable reports and richer accessible chart components
+
+## Kullanıcı Akışı
+
+1. Kullanıcı kayıt olur veya giriş yapar.
+2. Kariyer hedefiyle uyumlu bir mülakat track'i seçer.
+3. Başlangıç seviyesini belirler; sistem sonraki sorularda zorluğu puana göre uyarlar.
+4. Gemini, track ve konsept bağlamında teknik sorular üretir.
+5. Tamamlanan görüşme; dashboard, geçmiş, ayrıntılı rapor ve PDF çıktısı olarak kullanıcıya sunulur.
+
+## Authentication
+
+Sistem JWT Bearer authentication kullanır. `register` ve `login` işlemleri token üretir; interview, history, dashboard, report ve PDF endpoint'leri sadece giriş yapan kullanıcının kendi verilerine erişmesine izin verir.
+
+## Adaptif Zorluk
+
+| Ortalama skor | Davranış |
+| --- | --- |
+| 90 ve üzeri | Zorluk bir seviye artar |
+| 70 - 89 | Aynı seviyede devam eder |
+| 70 altı | Zorluk bir seviye düşer |
+
+## Raporlama ve PDF
+
+Rapor ekranı ortalama skor, güçlü/gelişim alanları, önerilen çalışma planı, zorluk ilerlemesi ve soru bazlı analiz içerir. `PDF Raporu İndir` aksiyonu, yalnızca rapor sahibinin indirebildiği profesyonel A4 çıktıyı üretir.
+
+## Dashboard
+
+Dashboard; tamamlanan görüşme sayısı, ortalama/en yüksek/en düşük skor, puan geçmişi ve konu performanslarını kullanıcı bazında gösterir.
+
+## API Endpointleri
+
+| Grup | Endpoint | Açıklama |
+| --- | --- | --- |
+| Auth | `POST /api/auth/register` | Yeni kullanıcı kaydı |
+| Auth | `POST /api/auth/login` | JWT token üretir |
+| Interview | `POST /api/interviews/start` | Yeni görüşme başlatır |
+| Interview | `POST /api/interviews/{id}/answer` | Cevabı değerlendirir |
+| Report | `GET /api/interviews/{id}/report` | Ayrıntılı raporu döndürür |
+| PDF | `GET /api/interviews/{id}/report/pdf` | Korumalı PDF raporu indirir |
+| History | `GET /api/interviews/history` | Kullanıcının geçmişini döndürür |
+| Dashboard | `GET /api/dashboard/summary` | Kullanıcı performans özetini döndürür |
+
+## Ortam Değişkenleri
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+JWT_SECRET=your_super_secret_key_here
+JWT_ISSUER=AIInterviewSimulator
+JWT_AUDIENCE=AIInterviewSimulatorUsers
+JWT_EXPIRES_MINUTES=120
+```
+
+Gerçek anahtarları asla repoya eklemeyin; kök `.env` dosyası `.gitignore` ile korunur.
+
+## Ekran Görüntüleri
+
+### Giriş Ekranı
+
+> `assets/screenshots/login.png` eklenecek.
+
+### Dashboard
+
+> `assets/screenshots/dashboard.png` eklenecek.
+
+### Interview ve Report
+
+> `assets/screenshots/interview-report.png` eklenecek.
+
+## Gelecek Geliştirmeler
+
+- Docker ve GitHub Actions CI/CD
+- Sesli mülakat modu
+- OpenAI sağlayıcı desteği
+- CV analyzer
+- Çoklu dil desteği
+
+## Neden Bu Proje?
+
+AI Technical Interview Simulator, adayların teknik mülakat pratiğini daha gerçekçi hale getirmek; eksiklerini ölçmek ve kişiselleştirilmiş gelişim adımları sunmak için tasarlanmıştır. Hem modern full-stack mimariyi hem de üretken yapay zekanın kullanıcı deneyimine güvenli biçimde entegrasyonunu gösteren portföy odaklı bir projedir.
