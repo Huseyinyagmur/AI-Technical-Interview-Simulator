@@ -13,7 +13,8 @@ async function request(path, options = {}) {
     throw error;
   }
 }
-export const startInterview = (topic, difficulty) => request('/interviews/start', { method: 'POST', body: JSON.stringify({ topic, difficulty }) });
+export const startInterview = (topic, difficulty, track) => request('/interviews/start', { method: 'POST', body: JSON.stringify({ topic, difficulty, track }) });
+export const getTracks = () => request('/tracks');
 export const submitAnswer = (sessionId, questionId, answer) => request(`/interviews/${sessionId}/answer`, { method: 'POST', body: JSON.stringify({ questionId, answer }) });
 export const getReport = (sessionId) => request(`/interviews/${sessionId}/report`);
 export const getHistory = () => request('/interviews/history');

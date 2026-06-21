@@ -10,6 +10,20 @@ A beginner-friendly MVP for practising technical interview answers. Select a top
 - Recruiter-style report with strong topics, weak topics, recommended study areas and reached difficulty
 - Persistent interview history and a dashboard with score history and topic performance charts
 - SQL Server persistence through Entity Framework Core
+- Career-oriented interview tracks, adaptive levels, question-bank variation and study-roadmap reports
+
+## Interview tracks
+
+| Track | Focus |
+| --- | --- |
+| C# Backend Developer | C#, OOP, LINQ, EF Core, Web API and SQL |
+| ASP.NET Core Developer | API design, middleware, DI, security and EF Core |
+| SQL Developer | Querying, transactions, modelling and optimisation |
+| Software Engineering Fundamentals | Git, testing, Clean Code, Agile and CI/CD |
+| Computer Vision Engineer | Image processing, YOLO, OCR, CNN, metrics and deployment |
+| Mixed Technical Interview | Balanced questions across all technical domains |
+
+Each interview records concept/domain coverage, adaptive difficulty progression, topic breakdown and a recommended study roadmap.
 
 ## Architecture
 
@@ -79,6 +93,14 @@ The backend loads `GEMINI_API_KEY` and `GEMINI_MODEL` from a machine environment
 ## Screenshots
 
 Add product screenshots to `assets/` and reference them here when publishing the project.
+
+## Architecture diagram
+
+```text
+React UI → ASP.NET Core API → InterviewService → GeminiService
+                    ↓                 ↓
+                SQL Server ← Entity Framework Core
+```
 
 ## Future improvements
 

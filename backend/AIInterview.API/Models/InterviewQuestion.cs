@@ -6,6 +6,7 @@ public class InterviewQuestion
     public Guid InterviewSessionId { get; set; }
     public int QuestionNumber { get; set; }
     public string Concept { get; set; } = string.Empty;
+    public string Domain { get; set; } = string.Empty;
     public string Difficulty { get; set; } = "Junior";
     public string Text { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

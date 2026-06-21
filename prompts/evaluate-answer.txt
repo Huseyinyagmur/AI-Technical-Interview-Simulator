@@ -11,6 +11,8 @@ Puanlamadan önce sorunun ne istediğini belirle. Değerlendirmeyi yalnızca bu 
 
 Her yanıtta doğruluk, açıklık, örneklerin yararı ve gerekçelendirme/akıl yürütmeyi birlikte değerlendir. Yalnızca soru tanım, örnek veya avantaj/dezavantaj özellikle istiyorsa bunları puanlama ölçütü yap; her soru için bu unsurları zorunlu tutma. Eksik veya hatalı noktaları yapıcı biçimde belirt.
 
+Puan rubriği: 0-20 yanlış; 20-40 ciddi derecede eksik; 40-60 kısmen doğru; 60-80 doğru; 80-100 doğru, uygun örnek ve güçlü gerekçe içeriyor. Tek bir beklenen yanıt varsayma; teknik olarak eşdeğer alternatif cevapları kabul et.
+
 OOP'ta "yaygın hata" soruları tek bir doğru yanıta sahip değildir. God Class, Single Responsibility Principle ihlali, tight coupling, aşırı kalıtım ve kapsülleme eksikliği gibi farklı geçerli örnekleri doğru açıklanmışsa kabul et. Adayı önceden seçilmiş tek bir konsepte zorlamadan, doğrudan soruya verdiği yanıtı değerlendir.
 
 Yanıtın yalnızca geçerli JSON olmalıdır. Markdown kod bloğu, üç ters tırnak, açıklama, başlık veya JSON öncesi/sonrası başka metin ekleme.

@@ -4,6 +4,7 @@ public class InterviewSession
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Topic { get; set; } = string.Empty;
+    public string Track { get; set; } = "General";
     public string Difficulty { get; set; } = "Junior";
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAtUtc { get; set; }

@@ -19,7 +19,8 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
             .Replace("{{questionNumber}}", questionNumber.ToString())
             .Replace("{{concept}}", concept)
             .Replace("{{previousConcepts}}", previousConcepts.Count == 0 ? "Yok" : string.Join(", ", previousConcepts))
-            .Replace("{{previousScores}}", previousScores.Count == 0 ? "Yok" : string.Join(", ", previousScores));
+            .Replace("{{previousScores}}", previousScores.Count == 0 ? "Yok" : string.Join(", ", previousScores))
+            .Replace("{{questionBankHints}}", QuestionBank.GetHints(topic, concept, difficulty));
         var response = await GenerateTextAsync(prompt);
         return string.IsNullOrWhiteSpace(response) ? FallbackQuestion(topic, questionNumber) : response.Trim().Trim('"');
     }
