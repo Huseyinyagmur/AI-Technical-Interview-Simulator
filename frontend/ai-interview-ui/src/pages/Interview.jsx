@@ -1,0 +1,6 @@
+import { useState } from 'react';
+import QuestionCard from '../components/QuestionCard';
+import AnswerForm from '../components/AnswerForm';
+import ScoreCard from '../components/ScoreCard';
+import { submitAnswer } from '../services/interviewApi';
+export default function Interview({ session, onComplete }) { const [question, setQuestion] = useState(session.question); const [evaluation, setEvaluation] = useState(null); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const answer = async text => { setBusy(true); setError(''); try { const result = await submitAnswer(session.sessionId, question.id, text); setEvaluation(result.evaluation); if (result.isCompleted) setTimeout(onComplete, 1200); else setTimeout(() => { setQuestion(result.nextQuestion); setEvaluation(null); }, 1600); } catch (err) { setError(err.message); } finally { setBusy(false); } }; return <main className="page"><QuestionCard question={question} /><AnswerForm onSubmit={answer} busy={busy} /><ScoreCard evaluation={evaluation} />{evaluation && !busy && <p className="muted">{question.questionNumber === 5 ? 'Preparing your final report…' : 'Loading the next question…'}</p>}{error && <p className="error">{error}</p>}</main>; }

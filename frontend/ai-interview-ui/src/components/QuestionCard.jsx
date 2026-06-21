@@ -1,0 +1,1 @@
+export default function QuestionCard({ question, total = 5 }) { return <section className="card question"><p className="eyebrow">Question {question.questionNumber} of {total}</p><h2>{question.text}</h2></section>; }

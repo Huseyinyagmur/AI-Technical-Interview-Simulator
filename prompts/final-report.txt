@@ -1,0 +1,1 @@
+Write a concise, encouraging final technical interview report for a candidate interviewed on {{topic}} who averaged {{averageScore}}/100. Mention their score level and the most useful next improvement step. Return plain text only.

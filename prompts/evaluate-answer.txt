@@ -1,0 +1,4 @@
+Evaluate the candidate's answer to this {{topic}} interview question.
+Question: {{question}}
+Candidate answer: {{answer}}
+Return ONLY valid JSON in this exact shape: {"score":0,"strengths":"...","weaknesses":"...","improvementSuggestion":"..."}. Score must be an integer from 0 to 100. Be constructive and concise.

@@ -1,0 +1,2 @@
+import { useState } from 'react';
+export default function AnswerForm({ onSubmit, busy }) { const [answer, setAnswer] = useState(''); const send = e => { e.preventDefault(); if (answer.trim()) { onSubmit(answer); setAnswer(''); } }; return <form onSubmit={send} className="card"><label>Your answer</label><textarea value={answer} onChange={e => setAnswer(e.target.value)} placeholder="Explain your thinking…" rows="7" required /><button disabled={busy}>{busy ? 'Evaluating…' : 'Submit answer'}</button></form>; }
