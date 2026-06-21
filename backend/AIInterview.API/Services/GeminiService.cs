@@ -29,14 +29,20 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         var template = PromptReader.Read("evaluate-answer.txt");
         var prompt = template.Replace("{{topic}}", topic).Replace("{{question}}", question).Replace("{{answer}}", answer)
             .Replace("{{questionType}}", DetermineQuestionType(question));
+        logger.LogInformation("[GEMINI EVALUATION REQUEST] QuestionType={QuestionType}; Prompt={Prompt}", DetermineQuestionType(question), prompt);
         var response = await GenerateTextDetailsAsync(prompt);
         // Log before any cleanup or extraction: this is the exact text returned by the model.
+        logger.LogInformation("[GEMINI EVALUATION RESPONSE] {GeminiResponse}", response.Text);
         logger.LogInformation("[GEMINI RAW] {GeminiResponse}", response.Text);
-        if (TryParseEvaluation(response.Text, out var evaluation, out _, out _)) return evaluation;
+        if (TryParseEvaluation(response.Text, out var evaluation, out _, out _))
+        {
+            logger.LogInformation("[EVALUATION SOURCE] Gemini");
+            return evaluation;
+        }
 
         // A provider hiccup should never prevent a learner from completing an interview.
-        return new EvaluationDto(50, "Cevabınızı gönderdiniz.", "Yapay zekâ değerlendirme yanıtı ayrıştırılamadı.",
-            "Cevabınızı tanım, örnek ve ilgili avantaj/dezavantajları içerecek şekilde yapılandırmayı deneyin.");
+        logger.LogWarning("[EVALUATION SOURCE] RuleBased (Gemini yanıtı kullanılamadı)");
+        return CreateRuleBasedFallback(question, answer);
     }
 
     public async Task<DebugEvaluateResponse> DebugEvaluateAnswerAsync(string topic, string question, string answer)
@@ -44,7 +50,9 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         var template = PromptReader.Read("evaluate-answer.txt");
         var prompt = template.Replace("{{topic}}", topic).Replace("{{question}}", question).Replace("{{answer}}", answer)
             .Replace("{{questionType}}", DetermineQuestionType(question));
+        logger.LogInformation("[GEMINI EVALUATION REQUEST] QuestionType={QuestionType}; Prompt={Prompt}", DetermineQuestionType(question), prompt);
         var response = await GenerateTextDetailsAsync(prompt);
+        logger.LogInformation("[GEMINI EVALUATION RESPONSE] {GeminiResponse}", response.Text);
         logger.LogInformation("[GEMINI RAW] {GeminiResponse}", response.Text);
         var parsed = TryParseEvaluation(response.Text, out var evaluation, out var json, out var parseError);
         return new DebugEvaluateResponse(response.Text, response.RawApiResponse, json, parsed, parsed ? evaluation : null, parseError);
@@ -134,9 +142,9 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
             using var document = JsonDocument.Parse(json);
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object) throw new JsonException("Kök JSON değeri nesne değil.");
-            var score = GetScore(root);
+            if (!TryGetScore(root, out var score)) throw new JsonException("score alanı 0-100 arasında sayı veya sayı metni olmalıdır.");
             string Get(string name) => root.TryGetProperty(name, out var value) ? value.GetString() ?? string.Empty : string.Empty;
-            evaluation = new EvaluationDto(score, Get("strengths"), Get("weaknesses"), Get("improvementSuggestion"));
+            evaluation = new EvaluationDto(score, Get("strengths"), Get("weaknesses"), Get("improvementSuggestion"), "Gemini");
             return true;
         }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException)
@@ -147,11 +155,28 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         }
     }
 
-    private static int GetScore(JsonElement root)
+    private static bool TryGetScore(JsonElement root, out int score)
     {
-        if (!root.TryGetProperty("score", out var value)) return 50;
-        if (value.TryGetInt32(out var numericScore)) return Math.Clamp(numericScore, 0, 100);
-        return value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var stringScore) ? Math.Clamp(stringScore, 0, 100) : 50;
+        score = 0;
+        if (!root.TryGetProperty("score", out var value)) return false;
+        if (value.TryGetInt32(out var numericScore)) { score = Math.Clamp(numericScore, 0, 100); return true; }
+        if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var stringScore)) { score = Math.Clamp(stringScore, 0, 100); return true; }
+        return false;
+    }
+
+    private static EvaluationDto CreateRuleBasedFallback(string question, string answer)
+    {
+        var type = DetermineQuestionType(question);
+        var words = answer.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        var score = words switch { < 8 => 30, < 25 => 45, < 60 => 60, _ => 70 };
+        var suggestion = type switch
+        {
+            "SQL_CODE_REQUIRED" => "Sorunun istediği SQL ifadesini geçerli sözdizimiyle yazın ve seçiminizi kısaca açıklayın.",
+            "EXPLANATION" => "Seçtiğiniz kavramı basit bir dille, hedef kitleye uygun somut bir örnekle açıklayın.",
+            _ when question.Contains("avantaj", StringComparison.OrdinalIgnoreCase) || question.Contains("dezavantaj", StringComparison.OrdinalIgnoreCase) => "Sorunun istediği avantaj ve dezavantajları ayrı, somut maddelerle ele alın.",
+            _ => "Sorunun doğrudan istediği noktayı yanıtlayın; gerekirse kısa bir örnek ve gerekçenizi ekleyin."
+        };
+        return new EvaluationDto(score, "Yanıtınız değerlendirme için kaydedildi.", "Gemini değerlendirmesi şu anda kullanılamadı; bu puan temel yanıt uzunluğu kuralına dayanır.", suggestion, "RuleBased");
     }
 
     private static string DetermineQuestionType(string question)

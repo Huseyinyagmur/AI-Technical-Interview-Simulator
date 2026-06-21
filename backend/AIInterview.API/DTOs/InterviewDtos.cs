@@ -13,7 +13,7 @@ public class SubmitAnswerRequest
     [Required, MinLength(2)] public string Answer { get; set; } = string.Empty;
 }
 public record QuestionDto(int Id, int QuestionNumber, string Text, string? Concept = null, string? Difficulty = null);
-public record EvaluationDto(int Score, string Strengths, string Weaknesses, string ImprovementSuggestion);
+public record EvaluationDto(int Score, string Strengths, string Weaknesses, string ImprovementSuggestion, string Source = "Gemini");
 public record StartInterviewResponse(Guid SessionId, QuestionDto Question, int TotalQuestions = 5);
 public record SubmitAnswerResponse(EvaluationDto Evaluation, QuestionDto? NextQuestion, bool IsCompleted);
 public record ReportAnswerDto(int QuestionNumber, string Question, string Answer, EvaluationDto Evaluation, string Concept, string Difficulty);

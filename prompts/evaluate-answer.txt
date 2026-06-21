@@ -9,7 +9,7 @@ Puanlamadan önce sorunun ne istediğini belirle. Değerlendirmeyi yalnızca bu 
 - Soru türü `EXPLANATION` ise SQL kodu veya sorgusu isteme. Aday; normalizasyon, transaction, index, primary key, join ya da başka uygun bir SQL kavramını seçebilir. Seçtiği kavramı doğru ve anlaşılır açıklaması yeterlidir; tek bir beklenen konu varmış gibi davranma.
 - `GENERAL` türünde sorunun talebine uygun doğru yanıtı değerlendir; gereksiz kod şartı koyma.
 
-Her yanıtta doğruluk, açıklık, örneklerin yararı ve gerekçelendirme/akıl yürütmeyi birlikte değerlendir. Eksik veya hatalı noktaları yapıcı biçimde belirt.
+Her yanıtta doğruluk, açıklık, örneklerin yararı ve gerekçelendirme/akıl yürütmeyi birlikte değerlendir. Yalnızca soru tanım, örnek veya avantaj/dezavantaj özellikle istiyorsa bunları puanlama ölçütü yap; her soru için bu unsurları zorunlu tutma. Eksik veya hatalı noktaları yapıcı biçimde belirt.
 
 Yanıtın yalnızca geçerli JSON olmalıdır. Markdown kod bloğu, üç ters tırnak, açıklama, başlık veya JSON öncesi/sonrası başka metin ekleme.
 Tüm metin değerlerini yalnızca Türkçe yaz. `score`, 0 ile 100 arasında tam sayı olmalıdır.
