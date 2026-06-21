@@ -38,8 +38,10 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
         var session = await db.InterviewSessions.Include(x => x.Questions).ThenInclude(x => x.Answer).FirstOrDefaultAsync(x => x.Id == sessionId);
         var question = session?.Questions.SingleOrDefault(x => x.Id == request.QuestionId);
         if (session is null || question is null || question.Answer is not null || session.IsCompleted) return null;
+        Console.WriteLine($"[QUESTION] {question.Text}");
+        Console.WriteLine($"[ANSWER] {request.Answer}");
         var evaluation = await gemini.EvaluateAnswerAsync(session.Topic, question.Text, request.Answer);
-        question.Answer = new InterviewAnswer { Text = request.Answer, Evaluation = new AnswerEvaluation { Score = evaluation.Score, Strengths = evaluation.Strengths, Weaknesses = evaluation.Weaknesses, ImprovementSuggestion = evaluation.ImprovementSuggestion } };
+        question.Answer = new InterviewAnswer { Text = request.Answer, Evaluation = new AnswerEvaluation { Score = evaluation.Score, Strengths = evaluation.Strengths, Weaknesses = evaluation.Weaknesses, ImprovementSuggestion = evaluation.ImprovementSuggestion, Source = evaluation.Source, ErrorMessage = evaluation.Source == "Gemini" ? null : evaluation.Weaknesses } };
         QuestionDto? nextQuestion = null;
         if (question.QuestionNumber < QuestionsPerInterview)
         {
@@ -55,6 +57,7 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
             nextQuestion = nextQuestion with { Id = next.Id };
         }
         else { session.IsCompleted = true; session.CompletedAtUtc = DateTime.UtcNow; await db.SaveChangesAsync(); }
+        Console.WriteLine($"[FINAL SAVED EVALUATION] Score={evaluation.Score}; Source={evaluation.Source}; EvaluationId={question.Answer.Evaluation!.Id}");
         return new SubmitAnswerResponse(evaluation, nextQuestion, session.IsCompleted);
     }
 
@@ -62,7 +65,7 @@ public class InterviewService(AppDbContext db, IGeminiService gemini) : IIntervi
     {
         var session = await db.InterviewSessions.Include(x => x.Questions).ThenInclude(x => x.Answer).ThenInclude(x => x!.Evaluation).FirstOrDefaultAsync(x => x.Id == sessionId);
         if (session is null || !session.IsCompleted) return null;
-        var answers = session.Questions.OrderBy(x => x.QuestionNumber).Where(x => x.Answer?.Evaluation is not null).Select(x => new ReportAnswerDto(x.QuestionNumber, x.Text, x.Answer!.Text, new EvaluationDto(x.Answer.Evaluation!.Score, x.Answer.Evaluation.Strengths, x.Answer.Evaluation.Weaknesses, x.Answer.Evaluation.ImprovementSuggestion), x.Concept, x.Difficulty)).ToList();
+        var answers = session.Questions.OrderBy(x => x.QuestionNumber).Where(x => x.Answer?.Evaluation is not null).Select(x => new ReportAnswerDto(x.QuestionNumber, x.Text, x.Answer!.Text, new EvaluationDto(x.Answer.Evaluation!.Score, x.Answer.Evaluation.Strengths, x.Answer.Evaluation.Weaknesses, x.Answer.Evaluation.ImprovementSuggestion, x.Answer.Evaluation.Source), x.Concept, x.Difficulty)).ToList();
         var average = answers.Count == 0 ? 0 : (int)Math.Round(answers.Average(x => x.Evaluation.Score));
         var topicScores = answers.GroupBy(x => x.Concept).Select(x => new { Concept = x.Key, Score = x.Average(y => y.Evaluation.Score) }).ToList();
         var strong = topicScores.Where(x => x.Score >= 75).OrderByDescending(x => x.Score).Select(x => x.Concept).ToList();

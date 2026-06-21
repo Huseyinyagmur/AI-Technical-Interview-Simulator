@@ -25,7 +25,9 @@ public record DashboardSummaryDto(int TotalInterviewsCompleted, int AverageInter
 public class DebugEvaluateRequest
 {
     [Required] public string Topic { get; set; } = string.Empty;
+    public string Concept { get; set; } = string.Empty;
+    public string Difficulty { get; set; } = string.Empty;
     [Required] public string Question { get; set; } = string.Empty;
     [Required] public string Answer { get; set; } = string.Empty;
 }
-public record DebugEvaluateResponse(string RawGeminiResponse, string RawApiResponse, string? ExtractedJson, bool ParseSucceeded, EvaluationDto? Evaluation, string? ParseError);
+public record DebugEvaluateResponse(string RawGeminiResponse, EvaluationDto? ParsedEvaluation, string Source, string? Error);

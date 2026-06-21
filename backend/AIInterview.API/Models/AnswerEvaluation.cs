@@ -8,5 +8,7 @@ public class AnswerEvaluation
     public string Strengths { get; set; } = string.Empty;
     public string Weaknesses { get; set; } = string.Empty;
     public string ImprovementSuggestion { get; set; } = string.Empty;
+    public string Source { get; set; } = "MissingEvaluation";
+    public string? ErrorMessage { get; set; }
     public InterviewAnswer? InterviewAnswer { get; set; }
 }

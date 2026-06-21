@@ -34,6 +34,12 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         // Log before any cleanup or extraction: this is the exact text returned by the model.
         logger.LogInformation("[GEMINI EVALUATION RESPONSE] {GeminiResponse}", response.Text);
         logger.LogInformation("[GEMINI RAW] {GeminiResponse}", response.Text);
+        if (string.IsNullOrWhiteSpace(response.Text))
+        {
+            var source = string.IsNullOrWhiteSpace(response.Error) ? "MissingEvaluation" : "Fallback";
+            logger.LogWarning("[EVALUATION SOURCE] {Source}. {Error}", source, response.Error ?? "empty Gemini response");
+            return CreateFailureEvaluation(source, response.Error ?? "Evaluation failed: empty Gemini response");
+        }
         if (TryParseEvaluation(response.Text, out var evaluation, out _, out _))
         {
             logger.LogInformation("[EVALUATION SOURCE] Gemini");
@@ -41,11 +47,11 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         }
 
         // A provider hiccup should never prevent a learner from completing an interview.
-        logger.LogWarning("[EVALUATION SOURCE] RuleBased (Gemini yanıtı kullanılamadı)");
-        return CreateRuleBasedFallback(question, answer);
+        logger.LogWarning("[EVALUATION SOURCE] ParseFailed");
+        return CreateFailureEvaluation("ParseFailed", "Evaluation failed: parse error");
     }
 
-    public async Task<DebugEvaluateResponse> DebugEvaluateAnswerAsync(string topic, string question, string answer)
+    public async Task<DebugEvaluateResponse> DebugEvaluateAnswerAsync(string topic, string concept, string difficulty, string question, string answer)
     {
         var template = PromptReader.Read("evaluate-answer.txt");
         var prompt = template.Replace("{{topic}}", topic).Replace("{{question}}", question).Replace("{{answer}}", answer)
@@ -54,8 +60,9 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         var response = await GenerateTextDetailsAsync(prompt);
         logger.LogInformation("[GEMINI EVALUATION RESPONSE] {GeminiResponse}", response.Text);
         logger.LogInformation("[GEMINI RAW] {GeminiResponse}", response.Text);
-        var parsed = TryParseEvaluation(response.Text, out var evaluation, out var json, out var parseError);
-        return new DebugEvaluateResponse(response.Text, response.RawApiResponse, json, parsed, parsed ? evaluation : null, parseError);
+        var parsed = TryParseEvaluation(response.Text, out var evaluation, out _, out var parseError);
+        var source = parsed ? "Gemini" : string.IsNullOrWhiteSpace(response.Text) ? "MissingEvaluation" : "ParseFailed";
+        return new DebugEvaluateResponse(response.Text, parsed ? evaluation : null, source, parseError ?? response.Error);
     }
 
     public async Task<string> GenerateFinalReportAsync(string topic, int averageScore)
@@ -74,7 +81,7 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         if (string.IsNullOrWhiteSpace(_apiKey) || _apiKey == "YOUR_GEMINI_API_KEY")
         {
             logger.LogWarning("Gemini API anahtarı yapılandırılmamış; yerel yedek yanıt kullanılacak.");
-            return new GeminiTextResponse(string.Empty, string.Empty);
+            return new GeminiTextResponse(string.Empty, string.Empty, "Evaluation failed: Gemini API key is missing");
         }
         try
         {
@@ -85,7 +92,7 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogError("Gemini API yanıtı başarısız. Durum kodu: {StatusCode}. Gövde: {ResponseBody}", response.StatusCode, rawApiResponse);
-                return new GeminiTextResponse(string.Empty, rawApiResponse);
+                return new GeminiTextResponse(string.Empty, rawApiResponse, $"Evaluation failed: Gemini API returned {(int)response.StatusCode}");
             }
 
             logger.LogInformation("[GEMINI RAW] Gemini API HTTP gövdesi: {RawApiResponse}", rawApiResponse);
@@ -93,23 +100,23 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
             {
                 using var document = JsonDocument.Parse(rawApiResponse);
                 var text = document.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString() ?? string.Empty;
-                return new GeminiTextResponse(text, rawApiResponse);
+                return new GeminiTextResponse(text, rawApiResponse, null);
             }
             catch (Exception ex) when (ex is JsonException or KeyNotFoundException or IndexOutOfRangeException)
             {
                 logger.LogError(ex, "Gemini API yanıt gövdesi beklenen biçimde değil. Ham gövde: {RawApiResponse}", rawApiResponse);
-                return new GeminiTextResponse(string.Empty, rawApiResponse);
+                return new GeminiTextResponse(string.Empty, rawApiResponse, "Evaluation failed: unexpected Gemini response structure");
             }
         }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Gemini API isteği başarısız oldu; yerel yedek yanıt kullanılacak.");
-            return new GeminiTextResponse(string.Empty, string.Empty);
+            return new GeminiTextResponse(string.Empty, string.Empty, "Evaluation failed: Gemini API request failed");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Beklenmeyen Gemini isteği hatası; yerel yedek yanıt kullanılacak.");
-            return new GeminiTextResponse(string.Empty, string.Empty);
+            return new GeminiTextResponse(string.Empty, string.Empty, "Evaluation failed: unexpected Gemini error");
         }
     }
 
@@ -163,6 +170,9 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var stringScore)) { score = Math.Clamp(stringScore, 0, 100); return true; }
         return false;
     }
+
+    private static EvaluationDto CreateFailureEvaluation(string source, string message) =>
+        new(0, string.Empty, message, "Gemini yapılandırmasını ve uygulama loglarını kontrol edip cevabı yeniden gönderin.", source);
 
     private static EvaluationDto CreateRuleBasedFallback(string question, string answer)
     {
@@ -234,5 +244,5 @@ public class GeminiService(HttpClient httpClient, IConfiguration configuration, 
         _ => $"Önemli bir {topic} kavramını junior bir geliştiriciye nasıl açıklarsınız?"
     };
 
-    private sealed record GeminiTextResponse(string Text, string RawApiResponse);
+    private sealed record GeminiTextResponse(string Text, string RawApiResponse, string? Error);
 }
